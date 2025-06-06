@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion de Flota Plataforma 11</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Definimos el color institucional como una variable CSS para fácil referencia */
+        :root {
+            --color-institucional: #009947;
+            --color-institucional-dark: #007a39;
+            --color-institucional-darker: #005c2c;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+
+        .header-gradient {
+            background: linear-gradient(to right, var(--color-institucional), var(--color-institucional-dark));
+        }
+
+        .obra-title {
+            border-bottom: 2px solid var(--color-institucional);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 1.75rem;
+            color: var(--color-institucional-darker);
+            display: inline-block;
+            /* Para que el borde se ajuste al texto */
+        }
+
+        .camion-card {
+            background-color: #ffffff;
+            border: 1px solid #e5e7eb;
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .camion-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .estado-operativo {
+            color: #16a34a;
+            font-weight: bold;
+        }
+
+        .estado-panne {
+            color: #dc2626;
+            font-weight: bold;
+        }
+
+        .chofer-card {
+            background-color: #f9fafb;
+        }
+
+        .filter-btn {
+            background-color: #e5e7eb;
+            color: #374151;
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .filter-btn.active,
+        .filter-btn:hover {
+            background-color: var(--color-institucional);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .content-filter-checkbox {
+            accent-color: var(--color-institucional-dark);
+        }
+
+        @media (min-width: 640px) {
+            .camion-card {
+                width: calc(50% - 0.75rem);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .camion-card {
+                width: calc(33.333% - 1rem);
+            }
+        }
+
+        @media (min-width: 1280px) {
+            .camion-card {
+                width: calc(25% - 1.125rem);
+            }
+        }
+
+        @media (min-width: 1536px) {
+            .camion-card {
+                width: calc(20% - 1.2rem);
+            }
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8">
+
+    <header class="header-gradient text-white p-6 rounded-lg shadow-lg mb-8">
+        <h1 class="text-3xl md:text-4xl font-bold text-center">Gestión de Flota Plataforma 11</h1>
+    </header>
+
+    <nav id="obraFilterMenu"
+        class="flex flex-wrap justify-center items-center gap-3 mb-4 p-4 bg-white rounded-lg shadow-md">
+        <!-- Los botones de filtro de Obras se cargarán aquí -->
+    </nav>
+
+    <nav id="cardContentFilterMenu"
+        class="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 mb-8 p-4 bg-white rounded-lg shadow-md">
+        <!-- Los checkboxes para filtrar contenido de tarjetas se cargarán aquí -->
+    </nav>
+
+    <div id="mapaConceptualContainer" class="space-y-8">
+        <!-- Las obras se cargarán aquí -->
+    </div>
+
+    <section id="detalleChoferesSection" class="mt-12 p-6 bg-white rounded-lg shadow-xl">
+        <div class="text-center">
+            <h2 class="text-2xl font-bold mb-6 obra-title">Detalle de Choferes y Camiones Autorizados</h2>
+        </div>
+        <div id="choferesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Los choferes se cargarán aquí -->
+        </div>
+    </section>
+
+    <script>
+        // --- INICIO DE DATOS ---
+        const choferesMaestroData = [
+            { rut: "13720144-5", nombre: "CONTRERAS HIDALGO CHRISTOPHER", cargo: "CHOFER DE SERVICIOS", obraPrincipal: "208", turno: "5X2", autorizadoParaPatentes: ["LGCC-33"] },
+            { rut: "14164141-7", nombre: "ORELLANA MARQUEZ JUAN RAMON", cargo: "CHOFER CAMION RAMPLA B", obraPrincipal: "222", turno: "5X2", autorizadoParaPatentes: ["LGCC-33"] },
+            { rut: "15211609-8", nombre: "OSSES STUARDO ALEXIS RUDAMAN", cargo: "CHOFER CAMION RAMPLA B", obraPrincipal: "210", turno: "7X7", autorizadoParaPatentes: ["LBDH-36"] },
+            { rut: "10040790-6", nombre: "CAICEO VERA JORGE HERNAN", cargo: "CHOFER CAMION RAMPLA", obraPrincipal: "210", turno: "7X7", autorizadoParaPatentes: ["LBDH-36"] },
+            { rut: "9347441-4", nombre: "BADILLA CASTILLO CARLOS RAMON", cargo: "CHOFER DE SERVICIOS", obraPrincipal: "208", turno: "5X2", autorizadoParaPatentes: ["RCLW-12"] },
+            { rut: "8371901-K", nombre: "MEZA MEZA, MAXIMO CLAUDIO", cargo: "CHOFER DE SERVICIOS", obraPrincipal: "210", turno: "5X2", autorizadoParaPatentes: ["LVFW-50"] },
+            { rut: "11890324-2", nombre: "SOTO FUENTES JOSE IGNACIO", cargo: "CHOFER DE SERVICIOS", obraPrincipal: "220", turno: "5X2", autorizadoParaPatentes: ["LTKW-97"] },
+            { rut: "11364802-3", nombre: "MIRANDA DINAMARCA OSCAR RODRIGO", cargo: "CHOFER DE SERVICIOS", obraPrincipal: "208", turno: "7X7", autorizadoParaPatentes: ["RCLV-98", "RCLW-10"] },
+            { rut: "9420145-4", nombre: "ACEVEDO CORNEJO, GONZALO DEL CARMEN", cargo: "CHOFER DE SERVICIOS", obraPrincipal: "208", turno: "7X7", autorizadoParaPatentes: ["RCLV-98", "RCLW-10"] },
+            { rut: "17133954-5", nombre: "MATURANA SEGURA, JORGE ALEJANDRO", cargo: "CHOFER DE SERVICIOS", obraPrincipal: "208", turno: "7X7", autorizadoParaPatentes: ["RCLV-98", "RCLW-10"] },
+            { rut: "13617296-4", nombre: "MERINO VASQUEZ CESAR ARMANDO", cargo: "CHOFER DE SERVICIOS B", obraPrincipal: "208", turno: "7X7", autorizadoParaPatentes: ["RCLV-98", "RCLW-10"] },
+            { rut: "15929436-6", nombre: "HENRIQUEZ VASQUEZ PABLO ANDRES", cargo: "CHOFER DE SERVICIOS B", obraPrincipal: "210", turno: "7X7", autorizadoParaPatentes: ["RCLV-98", "RCLW-10"] },
+            { rut: "13785517-8", nombre: "ESPINOZA SAZO JORGE ESTEBAN", cargo: "CHOFER DE SERVICIOS B", obraPrincipal: "208", turno: "7X7", autorizadoParaPatentes: ["RCLV-98", "RCLW-10"] },
+            { rut: "10677612-1", nombre: "SILVA CORNEJO, MANUEL ANTONIO", cargo: "CHOFER DE SERVICIOS B", obraPrincipal: "210", turno: "7X7", autorizadoParaPatentes: ["RCLV-98", "RCLW-10"] },
+            { rut: "13944496-5", nombre: "SANCHEZ MELLA ALEX ESTEBAN A.", cargo: "CHOFER DE SERVICIOS B", obraPrincipal: "208", turno: "7X7", autorizadoParaPatentes: ["RCLV-98", "RCLW-10"] },
+            { rut: "25521859-K", nombre: "GUILLEN RUBEN", cargo: "CHOFER DE SERVICIOS", obraPrincipal: "220", turno: "7X7", autorizadoParaPatentes: ["LLXS-67"] },
+            { rut: "12059998-4", nombre: "SOTO IRARRAZABAL SAMUEL ENRIQUE", cargo: "CHOFER DE SERVICIOS", obraPrincipal: "222", turno: "7X7", autorizadoParaPatentes: ["SLXY-26"] },
+            { rut: "13785517-8", nombre: "CACERES QUINTANILLA EDUARDO ANTONIO", cargo: "CHOFER DE SERVICIOS B", obraPrincipal: "222", turno: "7X7", autorizadoParaPatentes: ["SLXY-26"] },
+            { rut: "16495229-0", nombre: "GONZALES SALINAS JAIME EUGENIO", cargo: "CHOFER DE SERVICIOS B", obraPrincipal: "222", turno: "7X7", autorizadoParaPatentes: ["SLXY-26"] },
+            { rut: "1512367-1", nombre: "GONZALEZ CABEZAS JESUS", cargo: "CHOFER DE SERVICIOS", obraPrincipal: "222", turno: "7X7", autorizadoParaPatentes: ["SLXY-26"] },
+            { rut: "13777838-6", nombre: "ABARCA VIDAL CRISTIAN ESTEBAN", cargo: "CHOFER DE SERVICIOS B", obraPrincipal: "222", turno: "7X7 (BEL)", autorizadoParaPatentes: [] },
+            { rut: "11554436-5", nombre: "CANTILLANA ACEVEDO MANUEL ROLANDO", cargo: "CHOFER DE SERVICIOS", obraPrincipal: "210 (UMA)", turno: "5X2", autorizadoParaPatentes: ["LVFW-49"] }
+        ];
+
+        const obrasData = [
+            {
+                id: "208", nombre: "Obra 208", gerencia: "Gerencia GOM", camiones: [
+                    { tipo: "Propio", descripcion: "CAMION HINO 500 (FC 1118)", patente: "LVFW-51", año: 2020, estado: "Panne", funcion: "Servicio", situacionActual: "CAMION FUERA DE SERVICIO DESDE EL AÑO 2022", kilometraje: "29,722", niveles: "Ninguno - panne" },
+                    { tipo: "Propio", descripcion: "CAMION HINO 500 (FC 1118)", patente: "RCLV-98", año: 2022, estado: "Operativo", funcion: "Servicio", situacionActual: "OPERATIVO 100 %", kilometraje: "51,287", niveles: "Acarreo, Sub6 y Tte.7" },
+                    { tipo: "Propio", descripcion: "CAMION HINO 500 (FC 1118)", patente: "SCXW-84", año: 2023, estado: "Panne", funcion: "Servicio", situacionActual: "CAMION SINIESTRADO, FUERA DE SERVICIO DESDE ENERO 2025", kilometraje: "38,496", niveles: "Acarreo, Sub6 y Tte.7" },
+                    { tipo: "Propio", descripcion: "CAMION HINO 500 (SIST. AMPLIROLL)", patente: "LVFW-50", año: 2020, estado: "Operativo", funcion: "Ampliroll", situacionActual: "OPERATIVO 100 %", kilometraje: "68,786", niveles: "Sub6 y Tte.7" },
+                    { tipo: "Propio", descripcion: "TRACTOCAMION VOLVO FH", patente: "LBDH-36", año: 2019, estado: "Operativo", funcion: "Transporte Rancagua-Sewell", situacionActual: "OPERATIVO 100 %", kilometraje: "348,586", niveles: "Solo movimientos entre Rancagua - Sewell" },
+                    { tipo: "Propio", descripcion: "CAMION FORD 2429", patente: "LGCC-33", año: 2019, estado: "Operativo", funcion: "Transporte Rancagua-Sewell", situacionActual: "OPERATIVO 100 %", kilometraje: "306,524", niveles: "Solo movimientos entre Rancagua - Sewell" },
+                    { tipo: "Arrendado", descripcion: "CAMION HINO 500 (ARRENDADO MAX RENTAL)", patente: "TVGB-71", año: 2025, estado: "Operativo", funcion: "Servicio", situacionActual: "UTILIZADO CON CHOFERES GARDILCIC", kilometraje: "7,341", niveles: "Sub6 y Tte.7 y Acarreo" }
+                ]
+            },
+            {
+                id: "210", nombre: "Obra 210", gerencia: "Gerencia GOM", camiones: [
+                    { tipo: "Propio", descripcion: "CAMION HINO 500 (FC 1118)", patente: "RCLW-10", año: 2022, estado: "Operativo", funcion: "Servicio", situacionActual: "OPERATIVO 100 %", kilometraje: "45,832", niveles: "Acarreo, Sub6 y Tte.7" },
+                    { tipo: "Propio", descripcion: "CAMION HINO 500 (FC 1118) (SIST. AMPLIROLL)", patente: "RCLW-12", año: 2021, estado: "Operativo", funcion: "Ampliroll", situacionActual: "OPERATIVO 100 %", kilometraje: "56,549", niveles: "Nivel de Acarreo" }
+                ]
+            },
+            {
+                id: "220", nombre: "Obra 220", gerencia: "Gerencia GOM", camiones: [
+                    { tipo: "Propio", descripcion: "CAMION FORD 2429", patente: "LLXS-67", año: 2020, estado: "Operativo", funcion: "Servicio", situacionActual: "OPERATIVO 100 %", kilometraje: "101,404", niveles: "Mina Nvo. N. Mina" },
+                    { tipo: "Propio", descripcion: "CAMION FORD 1723 (SIST. AMPLIROLL)", patente: "LTKW-97", año: 2020, estado: "Operativo", funcion: "Ampliroll", situacionActual: "OPERATIVO 100 %", kilometraje: "58,412", niveles: "Mina Nvo. N. Mina" },
+                    { tipo: "Arrendado", descripcion: "CAMION HINO 500 (ARRENDADO RD RENTAL)", patente: "TGVZ-76", año: 2025, estado: "Operativo", funcion: "Servicio", situacionActual: "CON 2 CHOFERES SUBCONTRATADOS, SISTEMA 7X7, TURNO A", kilometraje: "6,611", niveles: "Andesita" }
+                ]
+            },
+            {
+                id: "222", nombre: "Obra 222", gerencia: "Gerencia VP", camiones: [
+                    { tipo: "Propio", descripcion: "CAMION HINO 500 (FC 1118)", patente: "SLXY-26", año: 2023, estado: "Panne", funcion: "Servicio", situacionActual: "EN PANNE DESDE EL 10-05-2025", kilometraje: "22,299", niveles: "Diamante" },
+                    { tipo: "Arrendado", descripcion: "CAMION HINO 500 (ARRENDADO MAX RENTAL)", patente: "TYCT-70", año: 2025, estado: "Operativo", funcion: "Servicio", situacionActual: "CON 2 CHOFERES SUBCONTRATADOS, SISTEMA 7X7, TURNO A", kilometraje: "5,203", niveles: "Diamante Superior" }
+                ]
+            },
+            {
+                id: "UMA", nombre: "Obra UMA", gerencia: "Gerencia GOM", camiones: [
+                    { tipo: "Propio", descripcion: "CAMION HINO 500", patente: "LVFW-49", año: 2020, estado: "Panne", funcion: "Servicio", situacionActual: "EN PANNE DESDE EL 28-05-2025", kilometraje: "170,260", niveles: "Sub6 y Tte.7 y Acarreo" }
+                ]
+            },
+            {
+                id: "224", nombre: "Obra 224", gerencia: "Gerencia VP", camiones: [
+                    { tipo: "Arrendado", descripcion: "CAMION HINO 500 (ARRENDADO MAX RENTAL)", patente: "TYCX-75", año: 2025, estado: "Operativo", funcion: "Servicio", situacionActual: "CON CHOFERES SUBCONTRATADOS, SISTEMA 7X7, TURNO A, PENDIENTE CONTRATACION 1 CHOFER", kilometraje: "1,669", niveles: "Diamante Inferior" }
+                ]
+            }
+        ];
+
+        // --- FIN DE DATOS ---
+
+        const mapaContainer = document.getElementById('mapaConceptualContainer');
+        const choferesDivContainer = document.getElementById('choferesContainer');
+        const obraFilterMenu = document.getElementById('obraFilterMenu');
+        const cardContentFilterMenu = document.getElementById('cardContentFilterMenu');
+
+        function getChoferesParaCamion(patenteCamion) {
+            return choferesMaestroData
+                .filter(chofer => chofer.autorizadoParaPatentes.includes(patenteCamion))
+                .map(chofer => formatName(chofer.nombre).short); // Devuelve el formato corto
+        }
+
+        // Renderizar las obras y camiones
+        obrasData.forEach(obra => {
+            const obraSection = document.createElement('section');
+            obraSection.id = `obra-${obra.id}`;
+            obraSection.className = 'obra-section p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl shadow-xl mb-8';
+
+            obraSection.innerHTML = `<div class="text-center mb-6"><p class="text-lg font-semibold text-gray-500">${obra.gerencia}</p><h2 class="obra-title font-semibold">${obra.nombre}</h2></div>`;
+
+            const camionesGrid = document.createElement('div');
+            // Cuadrícula flexible: 1 col en móvil, 2 en sm, 3 en lg, 4 en xl, hasta 5 en 2xl.
+            camionesGrid.className = 'flex flex-wrap justify-center gap-6';
+
+            if (obra.camiones.length > 0) {
+                obra.camiones.forEach(camion => {
+                    const camionCard = document.createElement('div');
+                    camionCard.className = 'camion-card rounded-lg shadow-lg p-6 space-y-3';
+                    const estadoClass = camion.estado === 'Operativo' ? 'estado-operativo' : 'estado-panne';
+                    let choferesAutorizadosNombres = getChoferesParaCamion(camion.patente);
+
+                    if (camion.patente === "TVGB-71" && camion.situacionActual === "SIN CHOFERES") {
+                        choferesAutorizadosNombres = ["Sin Choferes Asignados"];
+                    } else if (choferesAutorizadosNombres.length === 0 && (camion.patente === "TGVZ-76" || camion.patente === "TYCT-70" || camion.patente === "TYCX-75")) {
+                        if (camion.situacionActual.toLowerCase().includes("con choferes")) {
+                            choferesAutorizadosNombres = [camion.situacionActual];
+                        }
+                    }
+
+                    camionCard.innerHTML = `
+                        <div class="text-center">
+                            <h3 class="text-xl font-semibold text-green-800">${camion.descripcion}</h3>
+                            <p class="text-base font-bold text-gray-700">${camion.patente}</p>
+                            <p class="text-sm text-gray-500">${camion.tipo} - Año: ${camion.año}</p>
+                        </div>
+                        <div class="my-2 text-center border-t border-b py-2 border-gray-200 space-y-1 flex-grow">
+                            <p class="info-funcion"><span class="font-medium">Función:</span> <span class="text-gray-900">${camion.funcion}</span></p>
+                            <p class="info-estado"><span class="font-medium">Estado:</span> <span class="${estadoClass}">${camion.estado}</span></p>
+                            <p class="info-kilometraje"><span class="font-medium">Kilometraje:</span> <span class="text-gray-900">${camion.kilometraje} Km</span></p>
+                            <p class="info-niveles"><span class="font-medium">Niveles:</span> <span class="text-gray-700">${camion.niveles}</span></p>
+                            <p class="info-situacion"><span class="font-medium">Situación:</span> <span class="text-gray-700">${camion.situacionActual}</span></p>
+                        </div>
+                        <div class="text-center info-choferes">
+                            <h4 class="font-medium text-gray-800">Choferes Autorizados:</h4>
+                            ${choferesAutorizadosNombres.length > 0 ?
+                            `<ul class="list-none text-sm text-gray-600 mt-1">${choferesAutorizadosNombres.map(nombre => `<li>${nombre}</li>`).join('')}</ul>` :
+                            '<p class="text-sm text-gray-500 mt-1">No hay choferes específicos asignados.</p>'
+                        }
+                        </div>
+                    `;
+                    camionesGrid.appendChild(camionCard);
+                });
+            } else {
+                camionesGrid.innerHTML = '<p class="text-gray-600 text-center">No hay camiones asignados a esta obra.</p>';
+            }
+            obraSection.appendChild(camionesGrid);
+            mapaContainer.appendChild(obraSection);
+        });
+
+        // Renderizar detalle de Choferes
+        choferesMaestroData.forEach(chofer => {
+            const choferCard = document.createElement('div');
+            choferCard.className = 'chofer-card border border-gray-200 rounded-lg p-4 shadow-md space-y-2';
+            const camionesDescripciones = chofer.autorizadoParaPatentes.map(patente => {
+                let camionDesc = patente;
+                obrasData.forEach(obra => { const foundCamion = obra.camiones.find(c => c.patente === patente); if (foundCamion) camionDesc = `${foundCamion.descripcion} (${patente})`; });
+                return camionDesc;
+            });
+            const nombreCompletoFormateado = formatName(chofer.nombre).full;
+            choferCard.innerHTML = `<h3 class="text-lg font-semibold text-center" style="color: var(--color-institucional-darker);">${nombreCompletoFormateado}</h3><div class="text-sm text-gray-600 text-center border-t pt-2 mt-2"><p>RUT: ${chofer.rut}</p><p>Cargo: ${chofer.cargo}</p><p>Obra Principal: ${chofer.obraPrincipal} | Turno: ${chofer.turno}</p></div><div class="border-t pt-2 mt-2 text-center"><h5 class="font-medium text-sm text-gray-700">Camiones Autorizados:</h5>${camionesDescripciones.length > 0 ? `<ul class="list-none text-xs text-gray-500 mt-1">${camionesDescripciones.map(desc => `<li>${desc}</li>`).join('')}</ul>` : '<p class="text-xs text-gray-500 mt-1">No tiene camiones asignados.</p>'}</div>`;
+            choferesDivContainer.appendChild(choferCard);
+        });
+
+        // --- LÓGICA DE FILTROS ---
+
+        // Filtro de Obras
+        function setupObraFilters() {
+            const allBtn = document.createElement('button');
+            allBtn.className = 'filter-btn active font-semibold py-2 px-4 rounded-lg';
+            allBtn.textContent = 'Mostrar Todas';
+            allBtn.dataset.filter = 'all';
+            obraFilterMenu.appendChild(allBtn);
+
+            obrasData.forEach(obra => {
+                const obraBtn = document.createElement('button');
+                obraBtn.className = 'filter-btn font-semibold py-2 px-4 rounded-lg';
+                obraBtn.textContent = obra.nombre;
+                obraBtn.dataset.filter = obra.id;
+                obraFilterMenu.appendChild(obraBtn);
+            });
+
+            obraFilterMenu.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'BUTTON') return;
+                const filterValue = e.target.dataset.filter;
+                obraFilterMenu.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                mapaContainer.querySelectorAll('.obra-section').forEach(section => {
+                    section.style.display = (filterValue === 'all' || section.id === `obra-${filterValue}`) ? 'block' : 'none';
+                });
+            });
+        }
+
+        // Filtro de Contenido de Tarjetas
+        function setupCardContentFilters() {
+            const filters = [
+                { label: 'Función', target: '.info-funcion' },
+                { label: 'Estado', target: '.info-estado' },
+                { label: 'Kilometraje', target: '.info-kilometraje' },
+                { label: 'Niveles', target: '.info-niveles' },
+                { label: 'Situación', target: '.info-situacion' },
+                { label: 'Choferes', target: '.info-choferes' }
+            ];
+
+            const title = document.createElement('span');
+            title.className = "font-semibold text-gray-700 mr-4";
+            title.textContent = "Mostrar en Tarjetas:";
+            cardContentFilterMenu.appendChild(title);
+
+            filters.forEach(filter => {
+                const container = document.createElement('div');
+                container.className = "flex items-center";
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `toggle-${filter.target.substring(1)}`;
+                checkbox.dataset.target = filter.target;
+                checkbox.checked = true;
+                checkbox.className = "content-filter-checkbox h-4 w-4 rounded";
+
+                const label = document.createElement('label');
+                label.htmlFor = checkbox.id;
+                label.textContent = filter.label;
+                label.className = "ml-2 text-sm text-gray-600";
+
+                container.appendChild(checkbox);
+                container.appendChild(label);
+                cardContentFilterMenu.appendChild(container);
+            });
+
+            cardContentFilterMenu.addEventListener('change', e => {
+                if (e.target.type !== 'checkbox') return;
+
+                const targetClass = e.target.dataset.target;
+                const isChecked = e.target.checked;
+
+                document.querySelectorAll(targetClass).forEach(el => {
+                    el.style.display = isChecked ? '' : 'none';
+                });
+            });
+        }
+
+        /**
+         * Formatea un nombre desde "APELLIDO NOMBRE" a un formato más legible.
+         * @param {string} originalName - El nombre en formato original.
+         * @returns {{short: string, full: string}} Un objeto con el nombre corto y completo.
+         */
+        function formatName(originalName) {
+            let lastNames = [];
+            let firstNames = [];
+            const toTitleCase = (arr) => arr.map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
+
+            const cleanedName = originalName.replace('.', ''); // Limpiar puntos
+
+            if (cleanedName.includes(',')) {
+                const parts = cleanedName.split(',');
+                lastNames = parts[0].trim().split(' ').filter(w => w);
+                firstNames = parts[1].trim().split(' ').filter(w => w);
+            } else {
+                const words = cleanedName.split(' ').filter(w => w);
+                if (words.length <= 1) return { short: toTitleCase(words), full: toTitleCase(words) };
+
+                // Heurística para dividir nombres y apellidos sin coma
+                if (words.length === 2) { // Ej: GUILLEN RUBEN
+                    lastNames = [words[0]];
+                    firstNames = [words[1]];
+                } else if (words.length === 3) { // Ej: CONTRERAS HIDALGO CHRISTOPHER
+                    lastNames = [words[0], words[1]];
+                    firstNames = [words[2]];
+                } else { // Ej: ORELLANA MARQUEZ JUAN RAMON (y casos más largos)
+                    lastNames = [words[0], words[1]];
+                    firstNames = words.slice(2);
+                }
+            }
+
+            const formattedFirstNames = toTitleCase(firstNames);
+            const formattedLastNames = toTitleCase(lastNames);
+            const firstName1 = toTitleCase(firstNames.slice(0, 1));
+            const lastName1 = toTitleCase(lastNames.slice(0, 1));
+
+            return {
+                short: `${firstName1} ${lastName1}`,
+                full: `${formattedFirstNames} ${formattedLastNames}`
+            };
+        }
+
+        // Inicializar la aplicación
+        setupObraFilters();
+        setupCardContentFilters();
+    </script>
+</body>
+
+</html>
